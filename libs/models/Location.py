@@ -1,6 +1,6 @@
 
 from sqlalchemy import Column, ForeignKey, INT, VARCHAR, BOOLEAN, TIMESTAMP
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, relationship
 
 from first import first
 from fuzzywuzzy import fuzz
@@ -25,6 +25,9 @@ class Location(Base):
         "GMD": "Ganymede",
     }
     LOCATION_NAMES = set()
+
+    outgoing_ships = relationship("Ship", back_populates="origin", foreign_keys='Ship.origin_id')
+    incoming_ships = relationship("Ship", back_populates="destination", foreign_keys='Ship.destination_id')
 
     @property
     def is_space(self) -> bool:

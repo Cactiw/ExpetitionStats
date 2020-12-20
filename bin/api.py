@@ -8,6 +8,8 @@ from libs.models.Location import Location
 from libs.models.Player import Player
 from libs.models.Ship import Ship
 
+from bin.service import get_current_datetime
+
 import logging
 import traceback
 
@@ -41,6 +43,12 @@ def update_tops(*args, **kwargs):
                 user.get("faction"), user.get("location")
             location = Location.get_create_location(location_name, session)
             player = Player.get_create_player(game_id=user_id, session=session)
+            if location.is_space:
+                if not player.location.is_space:
+                    # Игрок только что вылетел
+                    ships = player.location.outgoing_ships
+                    player.suitable_ships = list(filter(lambda ship: ship.departed_now, ships))
+
             player.check_update_data(exp, lvl, rank, location, faction, user_name, session)
         session.close()
         logging.info("Players updated")
@@ -58,6 +66,9 @@ def update_ships(*args, **kwargs):
             ship_id, code, name, ship_type, status = ship.get("shipId"), ship.get("numberPlate"), ship.get("shipName"),\
                                                      ship.get("shipType"), ship.get("shipStatus")
             ship = Ship.get_create_ship(ship_id, session)
+            if ship.status == "preparing":
+                if "underway" in status:
+                    ship.departed_date = get_current_datetime()
             ship.name = name
             ship.code = code
             ship.type = ship_type

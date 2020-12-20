@@ -1,5 +1,5 @@
 
-from sqlalchemy import Column, ForeignKey, INT, VARCHAR, BOOLEAN, TIMESTAMP
+from sqlalchemy import Column, ForeignKey, INT, VARCHAR, BOOLEAN, TIMESTAMP, Table
 from sqlalchemy.orm import relationship, Session
 
 import datetime
@@ -9,6 +9,7 @@ from resources.globals import Base
 from bin.service import get_current_datetime
 
 from libs.models.Location import Location
+from libs.models.Ship import Ship, suitable_ships_table
 
 
 class Player(Base):
@@ -27,6 +28,8 @@ class Player(Base):
     location_history = relationship("PlayerLocationChanges")
 
     location = relationship("Location")
+
+    suitable_ships = relationship("Ship", secondary=suitable_ships_table, back_populates="possible_players")
 
     @staticmethod
     def get_create_player(game_id: str, session: Session):
@@ -54,6 +57,8 @@ class Player(Base):
             self.update_faction(faction, session)
         if username != self.username:
             self.update_username(username, session)
+
+        session.add(self)
         session.commit()
 
     def update_exp(self, exp: int, session: Session):
