@@ -119,7 +119,7 @@ def player_history(bot, update):
     if player is None:
         bot.send_message(chat_id=update.message.chat_id, text="Игрок не найден.")
         return
-    days = int(parse.group(3)) or 1
+    days = int(parse.group(3) or 1)
     response = "Перемещения <b>{}</b> за {} дней:\n".format(player.username, days)
 
     changes = list(filter(lambda change: change.date - get_current_datetime() <= datetime.timedelta(days=days) and
