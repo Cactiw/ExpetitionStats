@@ -31,3 +31,26 @@ def update_tops(*args, **kwargs):
         session.close()
         logging.info("Players updated")
 
+
+def spy(bot, update):
+    pass
+
+
+def view_players(bot, update):
+    try:
+        location_name = update.message.text.split()[1]
+    except (TypeError, IndexError):
+        return
+    session = SessionMaker()
+    location = session.query(Location).filter(Location.name.ilike("{}%".format(location_name))).first()
+    if location is None:
+        bot.send_message(chat_id=update.message.chat_id, text="Локация не найдена.")
+        return
+    players = session.query(Player).filter_by(location=location).limit(50).all()
+    response = "Игроки в <b>{}</b>:\n".format(location.name)
+    for player in sorted(players, key=lambda player: (player.lvl, player.exp), reverse=True):
+        response += player.short_format()
+    bot.send_message(chat_id=update.message.chat_id, text=response, parse_mode="HTML")
+
+    session.close()
+

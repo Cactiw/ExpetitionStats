@@ -37,6 +37,9 @@ class Player(Base):
             session.commit()
         return player
 
+    def short_format(self) -> str:
+        return "#<code>{:<2} 🏅{:<1}</code> {}\n".format(self.rank, self.lvl, self.username)
+
     def check_update_data(self, exp: int, lvl: int, rank: int, location: 'Location', faction: str, username: str,
                           session: Session):
         if exp != self.exp:
