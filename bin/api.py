@@ -6,11 +6,25 @@ from resources.globals import SessionMaker
 from libs.api import ExpeditionAPI
 from libs.models.Location import Location
 from libs.models.Player import Player
+from libs.models.Ship import Ship
 
 import logging
+import traceback
 
 
 TOPS_INTERVAL = 1  # minutes
+
+
+def update_all(*args, **kwargs):
+    try:
+        update_ships()
+    except Exception:
+        logging.error("Error in updating ships: {}".format(traceback.format_exc()))
+
+    try:
+        update_tops()
+    except Exception:
+        logging.error("Error in updating users: {}".format(traceback.format_exc()))
 
 
 def update_tops(*args, **kwargs):
@@ -30,6 +44,27 @@ def update_tops(*args, **kwargs):
             player.check_update_data(exp, lvl, rank, location, faction, user_name, session)
         session.close()
         logging.info("Players updated")
+
+
+def update_ships(*args, **kwargs):
+    try:
+        ships: Dict = ExpeditionAPI.get_ships()
+    except RuntimeError:
+        pass
+    else:
+        session = SessionMaker()
+        logging.info("Updating ships")
+        for ship in ships.get("ships"):
+            ship_id, code, name, ship_type, status = ship.get("shipId"), ship.get("numberPlate"), ship.get("shipName"),\
+                                                     ship.get("shipType"), ship.get("shipStatus")
+            ship = Ship.get_create_ship(ship_id, session)
+            ship.name = name
+            ship.code = code
+            ship.type = ship_type
+            ship.status = status
+            ship.determine_locations(session)
+        session.close()
+        logging.info("Ships updated")
 
 
 def spy(bot, update):
