@@ -29,7 +29,9 @@ class Player(Base):
 
     location = relationship("Location")
 
-    suitable_ships = relationship("Ship", secondary=suitable_ships_table, back_populates="possible_players")
+    location_changes: list = relationship("PlayerLocationChanges")
+
+    possible_ships = relationship("Ship", secondary=suitable_ships_table, back_populates="possible_players")
 
     @staticmethod
     def get_create_player(game_id: str, session: Session):

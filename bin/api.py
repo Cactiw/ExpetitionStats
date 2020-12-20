@@ -8,9 +8,11 @@ from libs.models.Location import Location
 from libs.models.Player import Player
 from libs.models.Ship import Ship
 
-from bin.service import get_current_datetime
+from bin.service import get_current_datetime, pretty_time_format
 
+import re
 import logging
+import datetime
 import traceback
 
 
@@ -79,7 +81,56 @@ def update_ships(*args, **kwargs):
 
 
 def spy(bot, update):
-    pass
+    try:
+        user_name = update.message.text.split()[1]
+    except (TypeError, IndexError):
+        return
+    session = SessionMaker()
+    player = session.query(Player).filter(Player.username.ilike("{}%".format(user_name))).first()
+    if player is None:
+        bot.send_message(chat_id=update.message.chat_id, text="Игрок не найден.")
+        return
+    response = "<b>{}</b>\n#{} 🏅{}\n".format(player.username, player.rank, player.lvl)
+    if player.location.is_space:
+        response += "<b>В пути</b> "
+        if not player.possible_ships:
+            response += "(Неизвестно)\n"
+        elif len(player.possible_ships) == 1:
+            ship = player.possible_ships[0]
+            response += "({})\n".format(ship.format_short())
+        else:
+            response += "(возможны все варианты):\n{}".format(
+                "    " + "\n    ".join(map(lambda possible_ship: possible_ship.format_short(), player.possible_ships))
+            ) + "\n"
+    else:
+        response += "<b>{}</b>\n".format(player.location.name)
+    response += "\nИстория перемещений: /pl_history_{}".format(player.id)
+    bot.send_message(chat_id=update.message.chat_id, text=response, parse_mode='HTML')
+    session.close()
+
+
+def player_history(bot, update):
+    parse = re.match("/pl_history_(\\d+)( (\\d+))?", update.message.text)
+    if parse is None:
+        bot.send_message(chat_id=update.message.chat_id, text="Неверный синтаксис.")
+        return
+    session = SessionMaker()
+    player: Player = session.query(Player).get(int(parse.group(1)))
+    if player is None:
+        bot.send_message(chat_id=update.message.chat_id, text="Игрок не найден.")
+        return
+    days = int(parse.group(3)) or 1
+    response = "Перемещения <b>{}</b> за {} дней:\n".format(player.username, days)
+
+    changes = list(filter(lambda change: change.date - get_current_datetime() <= datetime.timedelta(days=days) and
+                                         not change.location.is_space,
+                   player.location_changes))
+    for current, previous in zip(changes, changes[1:]):
+        response += "{} -> {} ({} -> {})".format(current.location.name, previous.location.name,
+                                                 pretty_time_format(current.date), pretty_time_format(previous.date))
+
+    bot.send_message(chat_id=update.message.chat_id, text=response, parse_mode='HTML')
+    session.close()
 
 
 def view_players(bot, update):

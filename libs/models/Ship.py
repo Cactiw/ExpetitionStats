@@ -36,7 +36,7 @@ class Ship(Base):
     origin = relationship("Location", foreign_keys=[origin_id], back_populates="outgoing_ships")
     destination = relationship("Location", foreign_keys=[destination_id], back_populates="incoming_ships")
 
-    possible_players = relationship("Player", secondary=suitable_ships_table, back_populates="suitable_ships")
+    possible_players = relationship("Player", secondary=suitable_ships_table, back_populates="possible_ships")
 
     @classmethod
     def get_create_ship(cls, ship_id: str, session: Session) -> 'Ship':
@@ -50,6 +50,9 @@ class Ship(Base):
     @property
     def departed_now(self):
         return self.departed_date and get_current_datetime() - self.departed_date <= datetime.timedelta(minutes=1)
+
+    def format_short(self):
+        return "{} -> {} {}%".format(self.origin.name, self.destination.name, self.progress)
 
     def determine_locations(self, session: Session):
         parse = re.match("(.+)\n(\\w+) -\u003e(\\w+)", self.status)
