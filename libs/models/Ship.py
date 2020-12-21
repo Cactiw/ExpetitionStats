@@ -49,7 +49,8 @@ class Ship(Base):
 
     @property
     def departed_now(self):
-        return self.departed_date and get_current_datetime() - self.departed_date <= datetime.timedelta(minutes=1)
+        return self.departed_date is not None and \
+               get_current_datetime() - self.departed_date <= datetime.timedelta(minutes=1)
 
     def format_short(self):
         return "{} -> {} {}%".format(self.origin.name, self.destination.name, self.progress)

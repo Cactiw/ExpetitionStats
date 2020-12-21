@@ -8,7 +8,7 @@ from libs.models.Location import Location
 from libs.models.Player import Player
 from libs.models.Ship import Ship
 
-from bin.service import get_current_datetime, pretty_time_format
+from bin.service import get_current_datetime, pretty_time_format, provide_session
 
 import re
 import logging
@@ -82,12 +82,12 @@ def update_ships(*args, **kwargs):
         logging.info("Ships updated")
 
 
-def spy(bot, update):
+@provide_session
+def spy(bot, update, session):
     try:
         user_name = update.message.text.split()[1]
     except (TypeError, IndexError):
         return
-    session = SessionMaker()
     player = session.query(Player).filter(Player.username.ilike("{}%".format(user_name))).first()
     if player is None:
         bot.send_message(chat_id=update.message.chat_id, text="Игрок не найден.")
@@ -108,15 +108,14 @@ def spy(bot, update):
         response += "<b>{}</b>\n".format(player.location.name)
     response += "\nИстория перемещений: /pl_history_{}".format(player.id)
     bot.send_message(chat_id=update.message.chat_id, text=response, parse_mode='HTML')
-    session.close()
 
 
-def player_history(bot, update):
+@provide_session
+def player_history(bot, update, session):
     parse = re.match("/pl_history_(\\d+)( (\\d+))?", update.message.text)
     if parse is None:
         bot.send_message(chat_id=update.message.chat_id, text="Неверный синтаксис.")
         return
-    session = SessionMaker()
     player: Player = session.query(Player).get(int(parse.group(1)))
     if player is None:
         bot.send_message(chat_id=update.message.chat_id, text="Игрок не найден.")
@@ -132,24 +131,21 @@ def player_history(bot, update):
                                                    pretty_time_format(current.date), pretty_time_format(previous.date))
 
     bot.send_message(chat_id=update.message.chat_id, text=response, parse_mode='HTML')
-    session.close()
 
 
-def view_players(bot, update):
+@provide_session
+def view_players(bot, update, session):
+    location = None
     try:
         location_name = update.message.text.split()[1]
+        location = session.query(Location).filter(Location.name.ilike("{}%".format(location_name))).first()
+        if location is None:
+            bot.send_message(chat_id=update.message.chat_id, text="Локация не найдена.")
+            return
+        players = session.query(Player).filter_by(location=location).limit(50).all()
     except (TypeError, IndexError):
-        return
-    session = SessionMaker()
-    location = session.query(Location).filter(Location.name.ilike("{}%".format(location_name))).first()
-    if location is None:
-        bot.send_message(chat_id=update.message.chat_id, text="Локация не найдена.")
-        return
-    players = session.query(Player).filter_by(location=location).limit(50).all()
-    response = "Игроки в <b>{}</b>:\n".format(location.name)
+        players = session.query(Player).limit(100).all()
+    response = "Игроки на <b>{}</b>:\n".format(location.name if location else "сервере")
     for player in sorted(players, key=lambda player: (player.lvl, player.exp), reverse=True):
         response += player.short_format()
     bot.send_message(chat_id=update.message.chat_id, text=response, parse_mode="HTML")
-
-    session.close()
-
