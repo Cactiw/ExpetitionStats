@@ -1,12 +1,13 @@
 
 from typing import Dict, List
 
-from resources.globals import SessionMaker
+from resources.globals import SessionMaker, dispatcher
 
 from libs.api import ExpeditionAPI
 from libs.models.Location import Location
 from libs.models.Player import Player
 from libs.models.Ship import Ship
+from libs.models.Guild import Guild
 
 from bin.service import get_current_datetime, pretty_time_format, provide_session
 
@@ -30,6 +31,8 @@ def update_all(*args, **kwargs):
     except Exception:
         logging.error("Error in updating users: {}".format(traceback.format_exc()))
 
+    update_guild_stats(dispatcher.bot, 1)
+
 
 def update_tops(*args, **kwargs):
     try:
@@ -46,7 +49,7 @@ def update_tops(*args, **kwargs):
             location = Location.get_create_location(location_name, session)
             player = Player.get_create_player(game_id=user_id, session=session)
             if location.is_space:
-                if not player.location.is_space:
+                if player.location and not player.location.is_space:
                     # Игрок только что вылетел
                     ships = player.location.outgoing_ships
                     player.possible_ships = list(filter(lambda ship: ship.departed_now, ships))
@@ -149,3 +152,29 @@ def view_players(bot, update, session):
     for player in sorted(players, key=lambda player: (player.lvl, player.exp), reverse=True):
         response += player.short_format()
     bot.send_message(chat_id=update.message.chat_id, text=response, parse_mode="HTML")
+
+
+@provide_session
+def update_guild_stats(bot, guild_id: int, session):
+    guild = session.query(Guild).get(guild_id)
+    if guild is None or not guild.chat_id:
+        return
+    players = session.query(Player).filter_by(guild=guild).all()
+    response = ""
+    for player in players:
+        response += "🏅{} {} {}\n".format(
+            player.lvl, player.username,
+            ("🪐{}" + player.location.name) if not player.location.is_space else ("🚀{}".format("{} -> {} ({}%)".format(
+            player.possible_ships[0].origin.name, player.possible_ships[0].destination.name,
+            player.possible_ships[0].progress) if player.possible_ships else ""
+        )))
+    response += "\nUpdated on {}\n".format(pretty_time_format(get_current_datetime()))
+    if guild.stats_message_id:
+        bot.editMessageText(chat_id=guild.chat_id, message_id=guild.stats_message_id, text=response, parse_mode='HTML')
+    else:
+        message = bot.sync_send_message(chat_id=guild.chat_id, text=response, parse_mode='HTML')
+        guild.stats_message_id = message.message_id
+        session.add(guild)
+        session.commit()
+
+

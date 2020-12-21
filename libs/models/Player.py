@@ -23,11 +23,14 @@ class Player(Base):
     location_id = Column(INT, ForeignKey("locations.id"))
     rank = Column(INT)
 
+    guild_id = Column(INT, ForeignKey("guilds.id"))
+
     exp_history = relationship("PlayerExpChanges")
     rank_history = relationship("PlayerRankChanges")
     location_history = relationship("PlayerLocationChanges")
 
     location = relationship("Location")
+    guild = relationship("Guild")
 
     location_changes: list = relationship("PlayerLocationChanges")
 
