@@ -159,12 +159,13 @@ def update_guild_stats(bot, guild_id: int, session):
     guild = session.query(Guild).get(guild_id)
     if guild is None or not guild.chat_id:
         return
-    players = session.query(Player).filter_by(guild=guild).all()
+    players = session.query(Player).filter_by(guild=guild).order_by(Player.lvl.desc()).\
+        order_by(Player.exp.desc()).all()
     response = ""
     for player in players:
-        response += "🏅{} {} {}\n".format(
+        response += "🏅{} <code>{:10}</code> {}\n".format(
             player.lvl, player.username,
-            ("🪐{}" + player.location.name) if not player.location.is_space else ("🚀{}".format("{} -> {} ({}%)".format(
+            ("🪐{}".format(player.location.name)) if not player.location.is_space else ("🚀{}".format("{} -> {} ({}%)".format(
             player.possible_ships[0].origin.name, player.possible_ships[0].destination.name,
             player.possible_ships[0].progress) if player.possible_ships else ""
         )))
