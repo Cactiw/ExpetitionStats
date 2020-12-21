@@ -68,7 +68,7 @@ def update_ships(*args, **kwargs):
             ship_id, code, name, ship_type, status = ship.get("shipId"), ship.get("numberPlate"), ship.get("shipName"),\
                                                      ship.get("shipType"), ship.get("shipStatus")
             ship = Ship.get_create_ship(ship_id, session)
-            if ship.status == "preparing":
+            if ship.status in {"preparing", "launching"}:
                 if "underway" in status:
                     ship.departed_date = get_current_datetime()
             ship.name = name
