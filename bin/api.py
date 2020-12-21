@@ -49,7 +49,9 @@ def update_tops(*args, **kwargs):
                 if not player.location.is_space:
                     # Игрок только что вылетел
                     ships = player.location.outgoing_ships
-                    player.suitable_ships = list(filter(lambda ship: ship.departed_now, ships))
+                    player.possible_ships = list(filter(lambda ship: ship.departed_now, ships))
+                    session.add(player)
+                    session.commit()
 
             player.check_update_data(exp, lvl, rank, location, faction, user_name, session)
         session.close()
@@ -126,8 +128,8 @@ def player_history(bot, update):
                                          not change.location.is_space,
                    player.location_changes))
     for current, previous in zip(changes, changes[1:]):
-        response += "{} -> {} ({} -> {})".format(current.location.name, previous.location.name,
-                                                 pretty_time_format(current.date), pretty_time_format(previous.date))
+        response += "{} -> {} ({} -> {})\n".format(current.location.name, previous.location.name,
+                                                   pretty_time_format(current.date), pretty_time_format(previous.date))
 
     bot.send_message(chat_id=update.message.chat_id, text=response, parse_mode='HTML')
     session.close()

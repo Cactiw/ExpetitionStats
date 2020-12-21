@@ -60,6 +60,7 @@ class Ship(Base):
             logging.error("Can not parse status: {}".format(self.status))
             return
         status, origin_code, destination_code = parse.groups()
+        self.progress = None
         if "underway" in status:
             status = re.match("underway (\\d+\\.\\d+)%", status)
             self.progress = float(status.group(1))
