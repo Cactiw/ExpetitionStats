@@ -163,7 +163,7 @@ def update_guild_stats(bot, guild_id: int, session):
         order_by(Player.exp.desc()).all()
     response = ""
     for player in players:
-        response += "🏅{} <code>{:10}</code> {}\n".format(
+        response += "🏅{} <code>{:11}</code> {}\n".format(
             player.lvl, player.username,
             ("🪐{}".format(player.location.name)) if not player.location.is_space else ("🚀{}".format("{} -> {} ({}%)".format(
             player.possible_ships[0].origin.name, player.possible_ships[0].destination.name,
