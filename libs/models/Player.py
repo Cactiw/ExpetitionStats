@@ -46,7 +46,7 @@ class Player(Base):
         return player
 
     def short_format(self) -> str:
-        return "#<code>{:<2} 🏅{:<1}</code> {}\n".format(self.rank, self.lvl, self.username)
+        return "#<code>{:<2} 🏅{:<1}</code> [{}] {}\n".format(self.rank, self.lvl, self.faction, self.username)
 
     def check_update_data(self, exp: int, lvl: int, rank: int, location: 'Location', faction: str, username: str,
                           session: Session):

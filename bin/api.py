@@ -1,6 +1,8 @@
 
 from typing import Dict, List
 
+from sqlalchemy import or_
+
 from resources.globals import SessionMaker, dispatcher
 
 from libs.api import ExpeditionAPI
@@ -179,3 +181,90 @@ def update_guild_stats(bot, guild_id: int, session):
         session.commit()
 
 
+@provide_session
+def view_ships(bot, update, session):
+    location = None
+    try:
+        location_name = update.message.text.split()[1]
+        location = session.query(Location).filter(Location.name.ilike("{}%".format(location_name))).first()
+        if location is None:
+            bot.send_message(chat_id=update.message.chat_id, text="Локация не найдена.")
+            return
+        ships = session.query(Ship).filter(or_(
+            Ship.origin_id == location.id, Ship.destination_id == location.id)
+        ).order_by(Ship.destination_id).order_by(Ship.origin_id).order_by(Ship.status).all()
+    except (TypeError, IndexError):
+        ships = session.query(Ship).order_by(Ship.origin_id).order_by(Ship.destination_id).all()
+
+    if location:
+        response = format_location_ships(location, ships)
+    else:
+        response = format_all_ships(ships)
+    bot.send_message(chat_id=update.message.chat_id, text=response, parse_mode='HTML')
+
+
+def format_all_ships(ships):
+    response = "Все корабли в игре:"
+    origin_id = None
+    for ship in ships:
+        if ship.origin_id != origin_id:
+            origin_id = ship.origin_id
+            response += "\n"
+
+        response += "{}<code>{}</code> {} -> {} {} /sh_{}\n".format(
+            ship.status_emoji, ship.code, ship.origin.name, ship.destination.name,
+            "({}% {})".format(int(ship.progress),
+                              pretty_time_format(ship.departed_date) if ship.departed_date else "")
+            if ship.progress is not None else "", ship.id
+        )
+    return response
+
+
+def format_location_ships(location, ships) -> str:
+    response = "Корабли в {}:\n".format(location.name)
+    outgoing = list(filter(lambda ship: ship.origin_id == location.id, ships))
+    incoming = list(filter(lambda ship: ship.destination_id == location.id, ships))
+
+    if outgoing:
+        response += "🛫Отбытие\n"
+        for ship in outgoing:
+            response += ship.format_line()
+        response += "\n"
+
+    if incoming:
+        response += "🛫Прибытие\n"
+        for ship in incoming:
+            response += ship.format_line(outgoing=False)
+    return response
+
+
+@provide_session
+def view_ship(bot, update, session):
+    parse = re.match("/sh_(\\d+)", update.message.text)
+    if parse is None:
+        bot.send_message(chat_id=update.message.chat_id, text="Карабль не найден.")
+        return
+    ship_id = int(parse.group(1))
+    ship = session.query(Ship).get(ship_id)
+    if ship is None:
+        bot.send_message(chat_id=update.message.chat_id, text="Корабль не найден.")
+        return
+
+    response = "<b>{} {}</b>\n".format(ship.code, ship.name)
+    response += "{}{}\n".format(ship.status_emoji, ship.status)
+    if ship.progress:
+        response += "{}% {}\n".format(ship.progress, "- departed {}".format(
+            pretty_time_format(ship.departed_date)) if ship.departed_date else ""
+        )
+        if ship.departed_date:
+            response += "Прибытие: {}\n".format(
+                pretty_time_format(
+                    ship.departed_date +
+                    (get_current_datetime() - ship.departed_date) / ship.progress * 100
+                )
+            )
+    if ship.possible_players:
+        response += "\nПассажиры:\n"
+        for player in ship.possible_players:
+            response += "{}".format(player.short_format())
+    bot.send_message(chat_id=update.message.chat_id, text=response, parse_mode='HTML')

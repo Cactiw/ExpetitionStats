@@ -6,7 +6,7 @@ from resources.globals import Base
 
 from libs.models.Location import Location
 
-from bin.service import get_current_datetime
+from bin.service import get_current_datetime, pretty_time_format
 
 import re
 import logging
@@ -37,6 +37,24 @@ class Ship(Base):
     destination = relationship("Location", foreign_keys=[destination_id], back_populates="incoming_ships")
 
     possible_players = relationship("Player", secondary=suitable_ships_table, back_populates="possible_ships")
+
+    _status_to_emoji = {
+        "preparing": "💤",
+        "starting": "🔜",
+        "underway": "🚀"
+    }
+
+    @property
+    def status_emoji(self) -> str:
+        return self._status_to_emoji.get(self.status, "")
+
+    def format_line(self, outgoing=True):
+        return "{}<code>{}</code> {} <code>{:<8}</code> {} /sh_{}\n".format(
+            self.status_emoji, self.code, "→" if outgoing else "←",
+            self.destination.name if outgoing else self.origin.name,
+            "({}% {})".format(int(self.progress),
+                              pretty_time_format(self.departed_date) if self.departed_date else "")
+            if self.progress is not None else "<code>         </code>", self.id)
 
     @classmethod
     def get_create_ship(cls, ship_id: str, session: Session) -> 'Ship':
