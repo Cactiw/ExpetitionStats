@@ -13,7 +13,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 dispatcher.add_handler(CommandHandler('players', view_players))
 dispatcher.add_handler(CommandHandler('ships', view_ships))
-dispatcher.add_handler(MessageHandler(Filters.command & Filters.regex("/sh_\\d+.*"), view_ship))
+dispatcher.add_handler(MessageHandler(Filters.command & Filters.regex("/sh[_ ].+"), view_ship))
 dispatcher.add_handler(CommandHandler('spy', spy))
 dispatcher.add_handler(MessageHandler(Filters.command & Filters.regex("/pl_history_\\d+.*"), player_history))
 

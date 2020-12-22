@@ -242,10 +242,17 @@ def format_location_ships(location, ships) -> str:
 def view_ship(bot, update, session):
     parse = re.match("/sh_(\\d+)", update.message.text)
     if parse is None:
-        bot.send_message(chat_id=update.message.chat_id, text="Карабль не найден.")
-        return
-    ship_id = int(parse.group(1))
-    ship = session.query(Ship).get(ship_id)
+        try:
+            code = update.message.text.split()[1]
+            ship = session.query(Ship).filter(Ship.code.ilike("{}%".format(code))).first()
+            if ship is None:
+                raise ValueError
+        except (TypeError, ValueError):
+            bot.send_message(chat_id=update.message.chat_id, text="Карабль не найден.")
+            return
+    else:
+        ship_id = int(parse.group(1))
+        ship = session.query(Ship).get(ship_id)
     if ship is None:
         bot.send_message(chat_id=update.message.chat_id, text="Корабль не найден.")
         return
