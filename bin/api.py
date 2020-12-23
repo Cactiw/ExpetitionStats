@@ -11,7 +11,8 @@ from libs.models.Player import Player
 from libs.models.Ship import Ship
 from libs.models.Guild import Guild
 
-from bin.service import get_current_datetime, pretty_time_format, provide_session
+from bin.service import get_current_datetime, pretty_time_format, pretty_datetime_format_short, provide_session, \
+    make_progressbar
 
 import re
 import logging
@@ -99,12 +100,13 @@ def spy(bot, update, session):
         return
     response = "<b>{}</b>\n#{} 🏅{}\n".format(player.username, player.rank, player.lvl)
     if player.location.is_space:
-        response += "<b>В пути</b> "
+        response += "<b>🚀В пути</b> "
         if not player.possible_ships:
             response += "(Неизвестно)\n"
         elif len(player.possible_ships) == 1:
             ship = player.possible_ships[0]
-            response += "({})\n".format(ship.format_short())
+            response += "({})\n".format(ship.format_short(show_link=False))
+            response += "<b>{} {}</b> /sh_{}\n".format(ship.code, ship.name, ship.id)
         else:
             response += "(возможны все варианты):\n{}".format(
                 "    " + "\n    ".join(map(lambda possible_ship: possible_ship.format_short(), player.possible_ships))
@@ -260,12 +262,13 @@ def view_ship(bot, update, session):
     response = "<b>{} {}</b>\n".format(ship.code, ship.name)
     response += "{}{}\n".format(ship.status_emoji, ship.status)
     if ship.progress:
+        response += "{}\n".format(make_progressbar(ship.progress))
         response += "{}% {}\n".format(ship.progress, "- departed {}".format(
-            pretty_time_format(ship.departed_date)) if ship.departed_date else ""
+            pretty_datetime_format_short(ship.departed_date)) if ship.departed_date else ""
         )
         if ship.departed_date:
             response += "Прибытие: {}\n".format(
-                pretty_time_format(
+                pretty_datetime_format_short(
                     ship.departed_date +
                     (get_current_datetime() - ship.departed_date) / ship.progress * 100
                 )
