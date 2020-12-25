@@ -260,6 +260,7 @@ def view_ship(bot, update, session):
         return
 
     response = "<b>{} {}</b>\n".format(ship.code, ship.name)
+    response += "{} -> {}\n".format(ship.origin.name, ship.destination.name)
     response += "{}{}\n".format(ship.status_emoji, ship.status)
     if ship.progress:
         response += "{}\n".format(make_progressbar(ship.progress))
