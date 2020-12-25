@@ -40,8 +40,9 @@ class Location(Base):
             location = Location(name=name)
             session.add(location)
             session.commit()
+            cls.init_database(session)
 
-            cls.LOCATION_NAMES.add(location.name)
+            # cls.LOCATION_NAMES.add(location.name)
         return location
 
     @classmethod
@@ -62,9 +63,10 @@ class Location(Base):
 
     @classmethod
     def init_database(cls, session: Session):
+        cls.LOCATION_NAMES.clear()
         locations = session.query(Location).all()
         list(map(lambda location: cls.LOCATION_NAMES.add(location.name),
                  filter(lambda location: not location.is_space, locations)))
-        cls.SPACE_ID = first(locations, key=lambda location: location.is_space).id
+        cls.SPACE_ID = first(locations, key=lambda location: location.is_space).id if locations else None
 
 
