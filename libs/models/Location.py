@@ -67,6 +67,7 @@ class Location(Base):
         locations = session.query(Location).all()
         list(map(lambda location: cls.LOCATION_NAMES.add(location.name),
                  filter(lambda location: not location.is_space, locations)))
-        cls.SPACE_ID = first(locations, key=lambda location: location.is_space).id if locations else None
+        space_location = first(locations, key=lambda location: location.is_space)
+        cls.SPACE_ID = space_location.id if space_location else None
 
 
