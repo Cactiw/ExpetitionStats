@@ -98,7 +98,7 @@ def spy(bot, update, session):
     if player is None:
         bot.send_message(chat_id=update.message.chat_id, text="Игрок не найден.")
         return
-    response = "<b>{}</b>\n#{} 🏅{}\n".format(player.username, player.rank, player.lvl)
+    response = "<b>{}</b>\n#{} 🏅{}\n[{}]\n".format(player.username, player.rank, player.lvl, player.faction)
     if player.location.is_space:
         response += "<b>🚀В пути</b> "
         if not player.possible_ships:
