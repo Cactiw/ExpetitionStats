@@ -70,6 +70,10 @@ class Ship(Base):
         return self.departed_date is not None and \
                get_current_datetime() - self.departed_date <= datetime.timedelta(minutes=1)
 
+    def calculate_arrival(self):
+        if self.departed_date:
+            return self.departed_date + (get_current_datetime() - self.departed_date) / self.progress * 100
+
     def format_short(self, show_link=True):
         return "{} -> {} {}%{}".format(self.origin.name, self.destination.name, self.progress,
                                         " /sh_{}".format(self.id) if show_link else "")

@@ -17,6 +17,8 @@ def pretty_datetime_format(dt: datetime.datetime):
 
 
 def pretty_datetime_format_short(dt: datetime.datetime):
+    if dt is None:
+        return ""
     return "{}{}".format(dt.strftime("%d/%m ") if dt.date() != get_current_datetime().date() else "",
                          dt.strftime("%H:%M"))
 

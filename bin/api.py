@@ -13,6 +13,7 @@ from libs.models.Guild import Guild
 
 from bin.service import get_current_datetime, pretty_time_format, pretty_datetime_format_short, provide_session, \
     make_progressbar
+from bin.string_service import translate_number_to_emoji
 
 import re
 import logging
@@ -160,6 +161,7 @@ def view_players(bot, update, session):
 
 @provide_session
 def update_guild_stats(bot, guild_id: int, session):
+    ships = []
     guild = session.query(Guild).get(guild_id)
     if guild is None or not guild.chat_id:
         return
@@ -167,12 +169,27 @@ def update_guild_stats(bot, guild_id: int, session):
         order_by(Player.exp.desc()).all()
     response = ""
     for player in players:
+        index = None
+        if player.location.is_space and player.possible_ships:
+            ship = player.possible_ships[0]
+            if ship in ships:
+                index = ships.index(ship)
+            else:
+                ships.append(ship)
+                index = len(ships)
         response += "🏅{} <code>{:11}</code> {}\n".format(
             player.lvl, player.username,
-            ("🪐{}".format(player.location.name)) if not player.location.is_space else ("🚀{}".format("{} -> {} ({}%)".format(
-            player.possible_ships[0].origin.name, player.possible_ships[0].destination.name,
-            player.possible_ships[0].progress) if player.possible_ships else ""
+            ("🪐{}".format(player.location.name)) if not player.location.is_space else (
+                "🚀{}{}".format(translate_number_to_emoji(index) if index else "", "{} -> {} ({}%)".format(
+                    player.possible_ships[0].origin.name, player.possible_ships[0].destination.name,
+                    player.possible_ships[0].progress) if player.possible_ships else ""
         )))
+    if ships:
+        response += "\nShips:\n"
+        for i, ship in enumerate(ships, start=1):
+            response += "{} {} -> {} ({}% - {})\n".format(
+                translate_number_to_emoji(i), ship.origin.name, ship.destination.name, ship.progress,
+                pretty_datetime_format_short(ship.calculate_arrival()))
     response += "\nUpdated on {}\n".format(pretty_time_format(get_current_datetime()))
     if guild.stats_message_id:
         bot.editMessageText(chat_id=guild.chat_id, message_id=guild.stats_message_id, text=response, parse_mode='HTML')
@@ -270,8 +287,7 @@ def view_ship(bot, update, session):
         if ship.departed_date:
             response += "Прибытие: {}\n".format(
                 pretty_datetime_format_short(
-                    ship.departed_date +
-                    (get_current_datetime() - ship.departed_date) / ship.progress * 100
+                    ship.calculate_arrival(),
                 )
             )
     if ship.possible_players:
