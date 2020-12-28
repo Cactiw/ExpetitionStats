@@ -173,7 +173,7 @@ def update_guild_stats(bot, guild_id: int, session):
         if player.location.is_space and player.possible_ships:
             ship = player.possible_ships[0]
             if ship in ships:
-                index = ships.index(ship)
+                index = ships.index(ship) + 1
             else:
                 ships.append(ship)
                 index = len(ships)
