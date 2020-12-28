@@ -83,6 +83,8 @@ class Player(Base):
 
     def update_location(self, location: 'Location', session: Session):
         change = PlayerLocationChanges(player=self, location=location, date=get_current_datetime())
+        if self.location.is_space and not location.is_space:
+            self.possible_ships.clear()
         self.location = location
         session.add(change)
 
