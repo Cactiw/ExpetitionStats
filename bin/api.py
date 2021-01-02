@@ -133,7 +133,9 @@ def player_history(bot, update, session):
 
     changes = list(filter(lambda change: get_current_datetime() - change.date <= datetime.timedelta(days=days),
                    player.location_changes))
-    for current, space, previous in zip(changes, changes[1:], changes[2:]):
+    if changes and changes[0].location.is_space:
+        changes = changes[1:]
+    for current, space, previous in zip(changes[::2], changes[1::2], changes[2::2]):
         if not space.location.is_space:
             continue
         response += "{} -> {} ({} -> {})\n".format(current.location.name, previous.location.name,
