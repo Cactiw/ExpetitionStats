@@ -131,8 +131,8 @@ def player_history(bot, update, session):
     days = int(parse.group(3) or 1)
     response = "Перемещения <b>{}</b> за {} дней:\n".format(player.username, days)
 
-    changes = list(filter(lambda change: get_current_datetime() - change.date <= datetime.timedelta(days=days),
-                   player.location_changes))
+    changes = list(sorted(filter(lambda change: get_current_datetime() - change.date <= datetime.timedelta(days=days),
+                   player.location_changes), key=lambda change: change.date, reverse=False))
     if changes and changes[0].location.is_space:
         changes = changes[1:]
     for current, space, previous in zip(changes[::2], changes[1::2], changes[2::2]):
