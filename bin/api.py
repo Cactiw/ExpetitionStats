@@ -131,12 +131,13 @@ def player_history(bot, update, session):
     days = int(parse.group(3) or 1)
     response = "Перемещения <b>{}</b> за {} дней:\n".format(player.username, days)
 
-    changes = list(filter(lambda change: get_current_datetime() - change.date <= datetime.timedelta(days=days) and
-                                         not change.location.is_space,
+    changes = list(filter(lambda change: get_current_datetime() - change.date <= datetime.timedelta(days=days),
                    player.location_changes))
-    for current, previous in zip(changes, changes[1:]):
+    for current, space, previous in zip(changes, changes[1:], changes[2:]):
+        if current.location.is_space:
+            continue
         response += "{} -> {} ({} -> {})\n".format(current.location.name, previous.location.name,
-                                                   pretty_time_format(current.date), pretty_time_format(previous.date))
+                                                   pretty_time_format(space.date), pretty_time_format(previous.date))
 
     bot.send_message(chat_id=update.message.chat_id, text=response, parse_mode='HTML')
 
