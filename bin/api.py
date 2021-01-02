@@ -1,7 +1,7 @@
 
 from typing import Dict, List
 
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 
 from resources.globals import SessionMaker, dispatcher
 
@@ -143,17 +143,22 @@ def player_history(bot, update, session):
 
 @provide_session
 def view_players(bot, update, session):
-    location = None
+    location, faction = None, None
     try:
         location_name = update.message.text.split()[1]
-        location = session.query(Location).filter(Location.name.ilike("{}%".format(location_name))).first()
-        if location is None:
-            bot.send_message(chat_id=update.message.chat_id, text="Локация не найдена.")
-            return
-        players = session.query(Player).filter_by(location=location).limit(50).all()
+        if location_name.lower() in {"fmc", "run", "gta"}:
+            faction = location_name.lower()
+            players = session.query(Player).filter(func.lower(Player.faction) == faction).all()
+        else:
+            location = session.query(Location).filter(Location.name.ilike("{}%".format(location_name))).first()
+            if location is None:
+                bot.send_message(chat_id=update.message.chat_id, text="Локация не найдена.")
+                return
+            players = session.query(Player).filter_by(location=location).limit(50).all()
     except (TypeError, IndexError):
         players = session.query(Player).limit(100).all()
-    response = "Игроки на <b>{}</b>:\n".format(location.name if location else "сервере")
+    response = "Игроки {}на <b>{}</b>:\n".format("{} ".format(faction.upper()) if faction else "",
+                                                 location.name if location else "сервере")
     for player in sorted(players, key=lambda player: (player.lvl, player.exp), reverse=True):
         response += player.short_format()
     bot.send_message(chat_id=update.message.chat_id, text=response, parse_mode="HTML")
