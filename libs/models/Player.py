@@ -9,7 +9,7 @@ from resources.globals import Base
 from bin.service import get_current_datetime
 
 from libs.models.Location import Location
-from libs.models.Ship import Ship, suitable_ships_table
+from libs.models.Ship import Ship, suitable_ships_table, crashed_ships_table
 
 
 class Player(Base):
@@ -35,6 +35,13 @@ class Player(Base):
     location_changes: list = relationship("PlayerLocationChanges")
 
     possible_ships = relationship("Ship", secondary=suitable_ships_table, back_populates="possible_players")
+    crashed_ships = relationship("Ship", secondary=crashed_ships_table, back_populates="crashed_players")
+
+    @property
+    def current_ship(self):
+        if self.location and self.location.is_space:
+            if self.possible_ships:
+                return self.possible_ships[0]
 
     @staticmethod
     def get_create_player(game_id: str, session: Session):
@@ -84,6 +91,11 @@ class Player(Base):
     def update_location(self, location: 'Location', session: Session):
         change = PlayerLocationChanges(player=self, location=location, date=get_current_datetime())
         if self.location and self.location.is_space and not location.is_space:
+            last_location_change = session.query(PlayerLocationChanges).join(Player).filter(Player.id == self.id)\
+                .order_by(PlayerLocationChanges.date.desc()).first()
+            if last_location_change and location.id == last_location_change.location.id:
+                # Пацаны разбились
+                self.crashed_ships.append(self.current_ship)
             self.possible_ships.clear()
         self.location = location
         session.add(change)

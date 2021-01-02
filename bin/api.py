@@ -278,7 +278,8 @@ def view_ship(bot, update, session):
 
     response = "<b>{} {}</b>\n".format(ship.code, ship.name)
     response += "{} -> {}\n".format(ship.origin.name, ship.destination.name)
-    response += "{}{}\n".format(ship.status_emoji, ship.status)
+    response += "{}{}\n".format(
+        ship.status_emoji, ship.status if not ship.crashed_players else ship.status + " ( 💥crashed? )")
     if ship.progress:
         response += "{}\n".format(make_progressbar(ship.progress))
         response += "{}% {}\n".format(ship.progress, "- departed {}".format(
@@ -294,4 +295,8 @@ def view_ship(bot, update, session):
         response += "\nПассажиры:\n"
         for player in ship.possible_players:
             response += "{}".format(player.short_format())
+
+    for player in ship.crashed_players:
+        response += "💥{}".format(player.short_format())
+
     bot.send_message(chat_id=update.message.chat_id, text=response, parse_mode='HTML')

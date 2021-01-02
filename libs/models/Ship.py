@@ -19,6 +19,12 @@ suitable_ships_table = Table(
     Column("ship_id", INT, ForeignKey("ships.id")),
 )
 
+crashed_ships_table = Table(
+    'crashed_ships', Base.metadata,
+    Column("player_id", INT, ForeignKey("players.id")),
+    Column("ship_id", INT, ForeignKey("ships.id")),
+)
+
 
 class Ship(Base):
     __tablename__ = "ships"
@@ -37,16 +43,25 @@ class Ship(Base):
     destination = relationship("Location", foreign_keys=[destination_id], back_populates="incoming_ships")
 
     possible_players = relationship("Player", secondary=suitable_ships_table, back_populates="possible_ships")
+    crashed_players = relationship("Player", secondary=crashed_ships_table, back_populates="crashed_ships")
 
     _status_to_emoji = {
         "preparing": "💤",
         "starting": "🔜",
-        "underway": "🚀"
+        "underway": "🚀",
+        "crashed": "💥"
     }
 
     @property
     def status_emoji(self) -> str:
-        return self._status_to_emoji.get(self.status, "")
+        emoji = self._status_to_emoji.get(self.status, "")
+        if self.crashed:
+            emoji += self._status_to_emoji.get("crashed")
+        return emoji
+
+    @property
+    def crashed(self) -> bool:
+        return bool(self.crashed_players)
 
     def format_line(self, outgoing=True):
         return "{}<code>{}</code> {} <code>{:<8}</code> {} /sh_{}\n".format(
@@ -89,6 +104,10 @@ class Ship(Base):
             status = re.match("underway (\\d+\\.\\d+)%", status)
             self.progress = float(status.group(1))
             status = "underway"
+        elif "underway" in self.status:
+            # Долетел корабль
+            if self.crashed:
+                self.crashed_players.clear()
         self.origin, self.destination = \
             Location.get_location_by_code(origin_code, session), \
             Location.get_location_by_code(destination_code, session)
