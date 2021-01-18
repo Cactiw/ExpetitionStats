@@ -1,6 +1,7 @@
 
 from sqlalchemy import Column, ForeignKey, INT, VARCHAR, BOOLEAN, TIMESTAMP
 from sqlalchemy.orm import Session, relationship
+from sqlalchemy.ext.hybrid import hybrid_property
 
 from first import first
 from fuzzywuzzy import fuzz
@@ -29,7 +30,7 @@ class Location(Base):
     outgoing_ships = relationship("Ship", back_populates="origin", foreign_keys='Ship.origin_id')
     incoming_ships = relationship("Ship", back_populates="destination", foreign_keys='Ship.destination_id')
 
-    @property
+    @hybrid_property
     def is_space(self) -> bool:
         return self.name == "Space"
 

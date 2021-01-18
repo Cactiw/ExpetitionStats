@@ -86,7 +86,7 @@ class Ship(Base):
                get_current_datetime() - self.departed_date <= datetime.timedelta(minutes=1)
 
     def calculate_arrival(self):
-        if self.departed_date:
+        if self.departed_date and self.progress:
             return self.departed_date + (get_current_datetime() - self.departed_date) / self.progress * 100
 
     def format_short(self, show_link=True):

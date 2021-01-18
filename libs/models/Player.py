@@ -1,5 +1,5 @@
 
-from sqlalchemy import Column, ForeignKey, INT, VARCHAR, BOOLEAN, TIMESTAMP, Table
+from sqlalchemy import Column, ForeignKey, INT, VARCHAR, BOOLEAN, TIMESTAMP, Table, not_
 from sqlalchemy.orm import relationship, Session
 
 import datetime
@@ -91,8 +91,9 @@ class Player(Base):
     def update_location(self, location: 'Location', session: Session):
         change = PlayerLocationChanges(player=self, location=location, date=get_current_datetime())
         if self.location and self.location.is_space and not location.is_space:
-            last_location_change = session.query(PlayerLocationChanges).join(Player).filter(Player.id == self.id)\
-                .order_by(PlayerLocationChanges.date.desc()).first()
+            last_location_change = session.query(PlayerLocationChanges).join(Player).\
+                join(PlayerLocationChanges.location).filter(Player.id == self.id).\
+                filter(not_(Location.is_space)).order_by(PlayerLocationChanges.date.desc()).first()
             if last_location_change and location.id == last_location_change.location.id:
                 # Пацаны разбились
                 self.crashed_ships.append(self.current_ship)
