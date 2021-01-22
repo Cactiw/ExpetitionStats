@@ -308,3 +308,12 @@ def view_ship(bot, update, session):
         response += "💥{}".format(player.short_format())
 
     bot.send_message(chat_id=update.message.chat_id, text=response, parse_mode='HTML')
+
+
+def start(bot, update):
+    bot.send_message(
+        chat_id=update.message.chat_id,
+        text="Привет!\nДоступные команды:\n/spy username - Отобразить статус игрока\n"
+             "/ships location - Отобразить корабли на локации\n"
+             "/players location or faction - Отобразить игроков на локации или конкретной фракции\n"
+    )
