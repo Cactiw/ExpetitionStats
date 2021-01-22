@@ -96,7 +96,8 @@ class Player(Base):
                 filter(not_(Location.is_space)).order_by(PlayerLocationChanges.date.desc()).first()
             if last_location_change and location.id == last_location_change.location.id:
                 # Пацаны разбились
-                self.crashed_ships.append(self.current_ship)
+                if self.current_ship:
+                    self.crashed_ships.append(self.current_ship)
             self.possible_ships.clear()
         self.location = location
         session.add(change)
