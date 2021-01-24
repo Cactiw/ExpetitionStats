@@ -61,6 +61,15 @@ class Location(Base):
         location = cls.get_create_location(name, session)
         return location
 
+    @classmethod
+    def search_location(cls, name: str, session: Session) -> 'Location':
+        """
+        Поиск локации по имени (Не зависит от регистра, можно написать только начало названия - lun найдёт Luna)
+        :param name:
+        :param session:
+        :return:
+        """
+        return session.query(Location).filter(Location.name.ilike("{}%".format(name))).first()
 
     @classmethod
     def init_database(cls, session: Session):

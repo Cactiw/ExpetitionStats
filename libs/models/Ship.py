@@ -25,6 +25,12 @@ crashed_ships_table = Table(
     Column("ship_id", INT, ForeignKey("ships.id")),
 )
 
+subscribed_ships_table = Table(
+    'subscribed_ships', Base.metadata,
+    Column("player_id", INT, ForeignKey("players.id")),
+    Column("ship_id", INT, ForeignKey("ships.id")),
+)
+
 
 class Ship(Base):
     __tablename__ = "ships"
@@ -44,6 +50,7 @@ class Ship(Base):
 
     possible_players = relationship("Player", secondary=suitable_ships_table, back_populates="possible_ships")
     crashed_players = relationship("Player", secondary=crashed_ships_table, back_populates="crashed_ships")
+    subscribed_players = relationship("Player", secondary=subscribed_ships_table, back_populates="subscribed_ships")
 
     _status_to_emoji = {
         "preparing": "💤",

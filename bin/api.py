@@ -7,7 +7,7 @@ from resources.globals import SessionMaker, dispatcher
 
 from libs.api import ExpeditionAPI
 from libs.models.Location import Location
-from libs.models.Player import Player
+from libs.models.Player import Player, provide_player
 from libs.models.Ship import Ship
 from libs.models.Guild import Guild
 
@@ -80,6 +80,17 @@ def update_ships(*args, **kwargs):
             if ship.status in {"preparing", "launching"}:
                 if "underway" in status:
                     ship.departed_date = get_current_datetime()
+                elif ship.status == "preparing" and "launching" in status:
+                    # Корабль начал отправляться
+                    for player in ship.subscribed_players:
+                        if player.telegram_id:
+                            dispatcher.bot.send_message(
+                                chat_id=player.telegram_id,
+                                text="🚀<b>{} {}</b> скоро отправится к <b>{}</b>".format(
+                                    ship.code, ship.name, ship.destination.name),
+                                parse_mode='HTML'
+                            )
+                    ship.subscribed_players.clear()
             ship.name = name
             ship.code = code
             ship.type = ship_type
@@ -153,7 +164,7 @@ def view_players(bot, update, session):
             faction = location_name.lower()
             players = session.query(Player).filter(func.lower(Player.faction) == faction).all()
         else:
-            location = session.query(Location).filter(Location.name.ilike("{}%".format(location_name))).first()
+            location = Location.search_location(location_name, session)
             if location is None:
                 bot.send_message(chat_id=update.message.chat_id, text="Локация не найдена.")
                 return
@@ -213,7 +224,7 @@ def view_ships(bot, update, session):
     location = None
     try:
         location_name = update.message.text.split()[1]
-        location = session.query(Location).filter(Location.name.ilike("{}%".format(location_name))).first()
+        location = Location.search_location(location_name, session)
         if location is None:
             bot.send_message(chat_id=update.message.chat_id, text="Локация не найдена.")
             return
@@ -351,5 +362,73 @@ def register_id(bot, update, session):
                      parse_mode='HTML')
 
 
-def sub(bot, update, session, player):
-    pass
+@provide_session
+@provide_player
+def sub(bot, update, session, player, args):
+    if not args:
+        bot.send_message(chat_id=update.message.chat_id, text="Неверный синтаксис.\nПример: /sub luna")
+        return
+    if not player:
+        bot.send_message(chat_id=update.message.chat_id,
+                         text="Команда доступна только зарегистрированным пользователям.\nУкажите свой ник в игре "
+                              "(пример: /register vamik76)")
+        return
+    location = Location.search_location(args[0], session)
+    if not location or location.is_space:
+        bot.send_message(chat_id=update.message.chat_id,
+                         text="Локация не найдена.")
+        return
+    if not player.location:
+        bot.send_message(chat_id=update.message.chat_id,
+                         text="Местоположения игрока не определено.\n(Неизвестная ошибка)")
+        return
+    if player.location.is_space:
+        bot.send_message(chat_id=update.message.chat_id,
+                         text="Команду можно использовать только находясь на планете (не в космосе)")
+        return
+    ships: List = session.query(Ship).filter_by(origin=player.location).filter_by(status="preparing").\
+        filter_by(destination=location).all()
+    if not ships:
+        bot.send_message(chat_id=update.message.chat_id,
+                         text="Ожидающие корабли по маршруту <b>{}</b> -> <b>{}</b> не найдены.".format(
+                             player.location.name, location.name))
+        return
+    if len(ships) == 1:
+        ship = ships[0]
+        if ship not in player.subscribed_ships:
+            player.subscribed_ships.append(ship)
+        session.add(player)
+        session.commit()
+        bot.send_message(chat_id=update.message.chat_id,
+                         text="Вы подписаны на изменение статуса корабля <b>{} {}</b>.".format(ship.code, ship.name),
+                         parse_mode='HTML')
+    else:
+        ships.sort(key=lambda sh: sh.type)
+        bot.send_message(chat_id=update.message.chat_id, text="Выберите корабль ({} -> {}):\n{}".format(
+            player.location.name, location.name,
+            "\n".join(
+                map(lambda ship: "{} {} {}".format(ship.code, ship.name, "/sub_{}".format(ship.id)), ships)))
+        )
+
+
+@provide_session
+@provide_player
+def sub_id(bot, update, session, player):
+    ship_id = re.search("_(\\d+)", update.message.text)
+    if ship_id is None:
+        bot.send_message(chat_id=update.message.chat_id, text="Неверный синтаксис.")
+        return
+    ship_id = int(ship_id.group(1))
+    ship = session.query(Ship).get(ship_id)
+    if ship is None:
+        bot.send_message(chat_id=update.message.chat_id, text="Корабль не найден.")
+        return
+    if ship not in player.subscribed_ships:
+        player.subscribed_ships.append(ship)
+    session.add(player)
+    session.commit()
+    bot.send_message(chat_id=update.message.chat_id,
+                     text="Вы подписаны на изменение статуса корабля <b>{} {}</b>.".format(ship.code, ship.name),
+                     parse_mode='HTML')
+
+

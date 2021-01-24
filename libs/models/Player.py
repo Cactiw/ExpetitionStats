@@ -9,7 +9,7 @@ from resources.globals import Base
 from bin.service import get_current_datetime
 
 from libs.models.Location import Location
-from libs.models.Ship import Ship, suitable_ships_table, crashed_ships_table
+from libs.models.Ship import Ship, suitable_ships_table, crashed_ships_table, subscribed_ships_table
 
 
 class Player(Base):
@@ -38,6 +38,7 @@ class Player(Base):
 
     possible_ships = relationship("Ship", secondary=suitable_ships_table, back_populates="possible_players")
     crashed_ships = relationship("Ship", secondary=crashed_ships_table, back_populates="crashed_players")
+    subscribed_ships = relationship("Ship", secondary=subscribed_ships_table, back_populates="subscribed_players")
 
     @property
     def current_ship(self):
@@ -176,3 +177,17 @@ class PlayerLocationChanges(Base):
 
     player = relationship("Player")
     location = relationship("Location")
+
+
+def provide_player(func):
+    def wrapper(*args, **kwargs):
+        session, update = args[-1], args[1]
+        if not isinstance(session, Session):
+            raise RuntimeError
+        player_id = update.message.from_user.id if hasattr(update, "message") else update.callback_query.from_user.id
+        player = session.query(Player).filter_by(telegram_id=player_id).first()
+
+        result = func(*args, player, **kwargs)
+        return result
+    return wrapper
+
