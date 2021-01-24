@@ -13,6 +13,8 @@ from libs.updater import AsyncUpdater
 
 from config import TOKEN, request_kwargs, psql_credentials
 
+factions = {"fmc", "run", "gta"}
+
 bot = AsyncBot(token=TOKEN, workers=16, request_kwargs=request_kwargs)
 updater = AsyncUpdater(bot=bot)
 

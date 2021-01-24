@@ -3,7 +3,7 @@ from typing import Dict, List
 
 from sqlalchemy import or_, func
 
-from resources.globals import SessionMaker, dispatcher
+from resources.globals import SessionMaker, dispatcher, factions
 
 from libs.api import ExpeditionAPI
 from libs.models.Location import Location
@@ -35,7 +35,7 @@ def update_all(*args, **kwargs):
     except Exception:
         logging.error("Error in updating users: {}".format(traceback.format_exc()))
 
-    update_guild_stats(dispatcher.bot, 1)
+    list(map(lambda guild_id: update_guild_stats(dispatcher.bot, guild_id), Guild.GUILD_IDS))
 
 
 def update_tops(*args, **kwargs):
@@ -160,7 +160,7 @@ def view_players(bot, update, session):
     location, faction = None, None
     try:
         location_name = update.message.text.split()[1]
-        if location_name.lower() in {"fmc", "run", "gta"}:
+        if location_name.lower() in factions:
             faction = location_name.lower()
             players = session.query(Player).filter(func.lower(Player.faction) == faction).all()
         else:
@@ -184,8 +184,12 @@ def update_guild_stats(bot, guild_id: int, session):
     guild = session.query(Guild).get(guild_id)
     if guild is None or not guild.chat_id:
         return
-    players = session.query(Player).filter_by(guild=guild).order_by(Player.lvl.desc()).\
-        order_by(Player.exp.desc()).all()
+    if guild.is_faction:
+        players = session.query(Player).filter_by(faction=guild.name).order_by(Player.lvl.desc()).\
+            order_by(Player.exp.desc()).all()
+    else:
+        players = session.query(Player).filter_by(guild=guild).order_by(Player.lvl.desc()).\
+            order_by(Player.exp.desc()).all()
     response = ""
     for player in players:
         index = None

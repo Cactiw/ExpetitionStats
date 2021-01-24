@@ -9,6 +9,7 @@ from bin.api import update_all, TOPS_INTERVAL, view_players, view_ship, view_shi
     register, register_id, sub, sub_id
 
 from libs.models.Location import Location
+from libs.models.Guild import Guild
 
 import logging
 
@@ -34,6 +35,7 @@ def init_database():
 
     session = SessionMaker()
     Location.init_database(session)
+    Guild.init_database(session)
     session.close()
 
 
