@@ -22,9 +22,9 @@ job_queue = updater.job_queue
 
 bot.dispatcher = dispatcher
 
-engine = create_engine(f'postgresql+psycopg2://{psql_credentials["user"]}:{psql_credentials["pass"]}@'
-                       f'{psql_credentials["host"]}:{psql_credentials["port"]}/{psql_credentials["dbname"]}',
-                       echo=False)
+db_url = f'postgresql+psycopg2://{psql_credentials["user"]}:{psql_credentials["pass"]}@' \
+         f'{psql_credentials["host"]}:{psql_credentials["port"]}/{psql_credentials["dbname"]}'
+engine = create_engine(db_url, echo=False)
 
 SessionMaker = sessionmaker(bind=engine, autoflush=False)
 session: SQLSession = SessionMaker()

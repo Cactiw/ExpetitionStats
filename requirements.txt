@@ -1,6 +1,7 @@
 python-telegram-bot==12.1.1
 psycopg2-binary
 sqlalchemy
+alembic
 first
 tzlocal
 pytz
