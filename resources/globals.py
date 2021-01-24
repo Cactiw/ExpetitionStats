@@ -10,7 +10,6 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from libs.bot import AsyncBot
 from libs.updater import AsyncUpdater
-from libs.database import Conn
 
 from config import TOKEN, request_kwargs, psql_credentials
 
