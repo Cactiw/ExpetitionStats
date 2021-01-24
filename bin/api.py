@@ -317,3 +317,39 @@ def start(bot, update):
              "/ships location - Отобразить корабли на локации\n"
              "/players location or faction - Отобразить игроков на локации или конкретной фракции\n"
     )
+
+
+@provide_session
+def register(bot, update, session, args):
+    if not args:
+        bot.send_message(chat_id=update.message.chat_id, text="Неверный синтаксис.\nПример: /register vamik76")
+        return
+    players = session.query(Player).filter(Player.username.ilike("{}%".format(" ".join(args)))).all()
+    if players is None:
+        bot.send_message(chat_id=update.message.chat_id, text="Игрок не найден.")
+        return
+    response = "Найденные игроки:\n{}".format("\n".join(map(lambda player: "{} /register_{}".format(player.username, player.id), players)))
+    bot.send_message(chat_id=update.message.chat_id, text=response, parse_mode='HTML')
+
+
+@provide_session
+def register_id(bot, update, session):
+    player_id = re.search("_(\\d+)", update.message.text)
+    if player_id is None:
+        bot.send_message(chat_id=update.message.chat_id, text="Неверный синтаксис.")
+        return
+    player_id = int(player_id.group(1))
+    player = session.query(Player).get(player_id)
+    if player is None:
+        bot.send_message(chat_id=update.message.chat_id, text="Игрок не найден.")
+        return
+    player.telegram_id = update.message.from_user.id
+    session.add(player)
+    session.commit()
+    bot.send_message(chat_id=update.message.chat_id,
+                     text="Я тебя запомнил, <b>{}</b>!\n<em>Регистрация успешна.</em>".format(player.username),
+                     parse_mode='HTML')
+
+
+def sub(bot, update, session, player):
+    pass

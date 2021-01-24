@@ -1,5 +1,5 @@
 
-from sqlalchemy import Column, ForeignKey, INT, VARCHAR, BOOLEAN, TIMESTAMP, Table, not_
+from sqlalchemy import Column, ForeignKey, INT, VARCHAR, BOOLEAN, TIMESTAMP, Table, not_, BIGINT
 from sqlalchemy.orm import relationship, Session
 
 import datetime
@@ -24,6 +24,8 @@ class Player(Base):
     rank = Column(INT)
 
     guild_id = Column(INT, ForeignKey("guilds.id"))
+
+    telegram_id = Column(BIGINT)
 
     exp_history = relationship("PlayerExpChanges")
     rank_history = relationship("PlayerRankChanges")
