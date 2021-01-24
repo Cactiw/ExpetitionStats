@@ -16,6 +16,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 dispatcher.add_handler(CommandHandler('players', view_players))
 dispatcher.add_handler(CommandHandler('start', start, filters=filter_is_pm))
+dispatcher.add_handler(CommandHandler('help', start, filters=filter_is_pm))
 dispatcher.add_handler(CommandHandler('ships', view_ships))
 dispatcher.add_handler(CommandHandler('register', register, filters=filter_is_pm, pass_args=True))
 dispatcher.add_handler(MessageHandler(Filters.command & Filters.regex("/register_\\d+") & filter_is_pm, register_id))
