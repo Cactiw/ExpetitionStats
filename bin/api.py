@@ -82,6 +82,7 @@ def update_ships(*args, **kwargs):
                     ship.departed_date = get_current_datetime()
                 elif ship.status == "preparing" and "launching" in status:
                     # Корабль начал отправляться
+                    ship.crashed_players.clear()
                     for player in ship.subscribed_players:
                         if player.telegram_id:
                             dispatcher.bot.send_message(
